@@ -2,35 +2,43 @@
 
 ## Environment Setup (Conda + Pip)
 
-Install Microsoft C++ Build Tools (Recommended)
-The most straightforward solution is to install the Microsoft C++ Build Tools:
-Download and install Microsoft C++ Build Tools from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
-During installation, make sure to select "C++ build tools" workload
-After installation, restart your terminal and try installing again:
+### Prerequisites
 
+**Install Microsoft C++ Build Tools (Recommended)**
+
+The most straightforward solution is to install the Microsoft C++ Build Tools:
+- Download and install Microsoft C++ Build Tools from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
+- During installation, make sure to select "C++ build tools" workload
+- After installation, restart your terminal and try installing again
+
+### Setup Steps
 
 Follow these steps to create an isolated Conda environment and install project dependencies from `requirements.txt`.
 
-1) Create a new Conda environment (choose a name you like, e.g., `bioacoustics-sr`). You can also pin a Python version if needed (example uses 3.13):
+**1) Create a new Conda environment**
+
+Choose a name you like (e.g., `bioacoustics-sr`). You can also pin a Python version if needed (example uses 3.13):
 
 ```bash
 conda create -n bioacoustics-sr python=3.13 -y
 ```
 
-2) Activate the environment:
+**2) Activate the environment:**
 
 ```bash
 conda activate bioacoustics-sr
 ```
 
-3) Upgrade `pip` (recommended) and install dependencies from `requirements.txt` located at the repo root:
+**3) Upgrade pip and install dependencies**
+
+Install dependencies from `requirements.txt` located at the repo root:
 
 ```bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-4) Grant permissions for pyannote models:
+**4) Grant permissions for pyannote models**
 
 Before using the voice activity detection features, you need to accept the terms and conditions for the pyannote models:
 
@@ -38,18 +46,27 @@ Before using the voice activity detection features, you need to accept the terms
 - Log in to your Hugging Face account
 - Accept the access conditions for the model
 - Create an access token at [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) if you haven't already
-- Set your Hugging Face token as an environment variable:
+- Create a `.env` file in the repository root folder and add your Hugging Face token:
+
   ```bash
-  set HF_TOKEN=your_token_here
+  # Create .env file in the repo root
+  echo HF_TOKEN=your_token_here > .env
+  ```
+  
+  Or manually create a `.env` file with the following content:
+  ```
+  HF_TOKEN=your_token_here
   ```
 
-5) Install FFmpeg:
+**5) Install FFmpeg:**
 
 ```bash   
 conda install -c conda-forge ffmpeg
 ```
 
-Notes:
+## Notes
+
 - Ensure `requirements.txt` exists in the repository (usually at the root).
-- If you prefer a different Python version, adjust the `python=` spec accordingly or omit it to use Conda’s default.
+- If you prefer a different Python version, adjust the `python=` spec accordingly or omit it to use Conda's default.
 - On first use of Conda in a new shell, you may need to run `conda init` and restart the terminal.
+- Make sure to add `.env` to your `.gitignore` file to avoid committing your Hugging Face token.
