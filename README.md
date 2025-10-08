@@ -30,7 +30,20 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-4) Install
+4) Grant permissions for pyannote models:
+
+Before using the voice activity detection features, you need to accept the terms and conditions for the pyannote models:
+
+- Visit [https://huggingface.co/pyannote/segmentation-3.0](https://huggingface.co/pyannote/segmentation-3.0)
+- Log in to your Hugging Face account
+- Accept the access conditions for the model
+- Create an access token at [https://huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) if you haven't already
+- Set your Hugging Face token as an environment variable:
+  ```bash
+  set HF_TOKEN=your_token_here
+  ```
+
+5) Install FFmpeg:
 
 ```bash   
 conda install -c conda-forge ffmpeg
