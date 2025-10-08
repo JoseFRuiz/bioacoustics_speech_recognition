@@ -1,0 +1,24 @@
+# Requirements for the bioacoustics_speech_recognition project
+# Listed from the user's pip commands. Comments below explain special cases.
+
+# Voice activity detection
+webrtcvad>=2.0.10
+
+# Audio processing
+audioop-lts==0.2.2
+pydub>=0.25.1
+
+
+# Transformers and datasets for model/benchmarking
+transformers>=4.50.0
+datasets>=2.0.0
+
+# Pytorch and Torchaudio (uncomment the lines below if not installed or install them separately)
+torch
+torchaudio
+
+# Speaker/segment tools
+pyannote.audio>=2.1
+
+# Environment variables
+python-dotenv==1.1.1
