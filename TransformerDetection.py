@@ -1,3 +1,4 @@
+
 from pyannote.audio import Pipeline
 from pydub import AudioSegment
 import numpy as np
@@ -6,6 +7,9 @@ from huggingface_hub import login
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from transformers import pipeline as hf_pipeline
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Read your Hugging Face token from environment. Do NOT hardcode secrets.
 HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_HUB_TOKEN")
@@ -21,10 +25,23 @@ except Exception:
     pass
 
 # Model identifier for VAD (pyannote 3.1-compatible)
-model_name = "pyannote/voice-activity-detection-3.1"
+# Use the segmentation model directly instead of the pipeline
+from pyannote.audio import Model
 
-# Load pyannote pipeline with token (pyannote 3.x uses `token`)
-pipeline = Pipeline.from_pretrained(model_name, token=HF_TOKEN)
+model_name = "pyannote/segmentation-3.0"
+model = Model.from_pretrained(model_name, token=HF_TOKEN)
+
+# Create a simple VAD pipeline using the segmentation model
+from pyannote.audio.pipelines import VoiceActivityDetection
+
+pipeline = VoiceActivityDetection(segmentation=model)
+
+# Instantiate the pipeline with default parameters
+HYPER_PARAMETERS = {
+    "min_duration_on": 0.1,
+    "min_duration_off": 0.1,
+}
+pipeline.instantiate(HYPER_PARAMETERS)
 
 # Function to load and preprocess audio
 def load_and_preprocess_audio(audio_path):
