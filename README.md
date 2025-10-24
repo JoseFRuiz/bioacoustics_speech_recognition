@@ -29,7 +29,15 @@ conda create -n bioacoustics-sr python=3.13 -y
 conda activate bioacoustics-sr
 ```
 
-**3) Upgrade pip and install dependencies**
+**3) Install FFmpeg:**
+
+```bash   
+conda install -c conda-forge ffmpeg
+```
+
+(You might need to install this before the packages below)
+
+**4) Upgrade pip and install dependencies**
 
 Install dependencies from `requirements.txt` located at the repo root:
 
@@ -38,7 +46,7 @@ python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-**4) Grant permissions for pyannote models**
+**5) Grant permissions for pyannote models**
 
 Before using the voice activity detection features, you need to accept the terms and conditions for the pyannote models:
 
@@ -57,12 +65,6 @@ Before using the voice activity detection features, you need to accept the terms
   ```
   HF_TOKEN=your_token_here
   ```
-
-**5) Install FFmpeg:**
-
-```bash   
-conda install -c conda-forge ffmpeg
-```
 
 ## Notes
 
