@@ -1,44 +1,15 @@
 # bioacoustics_speech_recognition
 
-## Environment Setup (Conda + Pip)
+## Environment Setup (Docker)
 
 ### Prerequisites
 
-**Install Microsoft C++ Build Tools (Recommended)**
-
-The most straightforward solution is to install the Microsoft C++ Build Tools:
-- Download and install Microsoft C++ Build Tools from: https://visualstudio.microsoft.com/visual-cpp-build-tools/
-- During installation, make sure to select "C++ build tools" workload
-- After installation, restart your terminal and try installing again
+- **Docker**: Install Docker Desktop or Docker Engine from [https://www.docker.com/get-started](https://www.docker.com/get-started)
+- **Docker Compose** (usually included with Docker Desktop): For easier container management
 
 ### Setup Steps
 
-Follow these steps to create an isolated Conda environment and install project dependencies from `requirements.txt`.
-
-**1) Create a new Conda environment**
-
-Choose a name you like (e.g., `bioacoustics-sr`). You can also pin a Python version if needed (example uses 3.13):
-
-```bash
-conda create -n bioacoustics-sr python=3.13 -y
-```
-
-**2) Activate the environment:**
-
-```bash
-conda activate bioacoustics-sr
-```
-
-**3) Upgrade pip and install dependencies**
-
-Install dependencies from `requirements.txt` located at the repo root:
-
-```bash
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-**4) Grant permissions for pyannote models**
+**1) Grant permissions for pyannote models**
 
 Before using the voice activity detection features, you need to accept the terms and conditions for the pyannote models:
 
@@ -58,15 +29,108 @@ Before using the voice activity detection features, you need to accept the terms
   HF_TOKEN=your_token_here
   ```
 
-**5) Install FFmpeg:**
+**2) Build and run the Docker container**
 
-```bash   
-conda install -c conda-forge ffmpeg
+Using Docker Compose (recommended):
+
+```bash
+# Build and start the container
+docker-compose up --build
+
+# Or run in detached mode
+docker-compose up -d --build
 ```
+
+Using Docker directly:
+
+```bash
+# Build the Docker image
+docker build -t bioacoustics-sr .
+
+# Run the container
+docker run -p 8888:8888 \
+  -v "${PWD}:/app" \
+  -v "${PWD}/data:/app/data" \
+  --env-file .env \
+  bioacoustics-sr
+```
+
+**3) Access Jupyter Notebook**
+
+Once the container is running, open your browser and navigate to:
+- `http://localhost:8888`
+
+The Jupyter notebook interface will be available. Open `bioacoustics_speech_recognition.ipynb` to start working.
+
+### Managing the Container
+
+**Stop the container:**
+```bash
+docker-compose down
+```
+
+**View logs:**
+```bash
+docker-compose logs -f
+```
+
+**Execute commands in the running container:**
+```bash
+docker-compose exec bioacoustics bash
+```
+
+**Rebuild after dependency changes:**
+```bash
+docker-compose up --build
+```
+
+### Running Python Scripts
+
+You can run Python scripts (like `TransformerDetection.py`) in the container using several methods:
+
+**Option 1: Execute script in running container (recommended)**
+
+If the container is already running (via `docker-compose up`), execute the script directly:
+
+```bash
+docker-compose exec bioacoustics python TransformerDetection.py
+```
+
+**Option 2: Run as one-off command**
+
+This starts a temporary container, runs the script, and exits automatically:
+
+```bash
+docker-compose run --rm bioacoustics python TransformerDetection.py
+```
+
+**Option 3: Interactive shell**
+
+Enter the container and run commands interactively:
+
+```bash
+# Enter the container
+docker-compose exec bioacoustics bash
+
+# Then inside the container, run:
+python TransformerDetection.py
+
+# Exit when done
+exit
+```
+
+**Option 4: Using Docker directly (without docker-compose)**
+
+```bash
+docker run --rm -v "${PWD}:/app" -v "${PWD}/data:/app/data" --env-file .env bioacoustics-sr python TransformerDetection.py
+```
+
+**Note:** Make sure your `.env` file contains `HF_TOKEN=your_token_here` and that any required input files (e.g., audio files in the `data/` directory) exist before running scripts.
 
 ## Notes
 
-- Ensure `requirements.txt` exists in the repository (usually at the root).
-- If you prefer a different Python version, adjust the `python=` spec accordingly or omit it to use Conda's default.
-- On first use of Conda in a new shell, you may need to run `conda init` and restart the terminal.
-- Make sure to add `.env` to your `.gitignore` file to avoid committing your Hugging Face token.
+- All dependencies (including FFmpeg) are automatically installed in the container
+- The project directory is mounted as a volume, so changes to your code are immediately reflected
+- Output files (`.wav`, etc.) will be saved in your local project directory
+- Make sure to add `.env` to your `.gitignore` file to avoid committing your Hugging Face token
+- The Docker setup uses Python 3.13, which is required for audioop-lts and compatible with all project dependencies

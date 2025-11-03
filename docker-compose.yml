@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  bioacoustics:
+    build: .
+    container_name: bioacoustics_speech_recognition
+    ports:
+      - "8888:8888"
+    volumes:
+      # Mount the project directory for live code editing
+      - .:/app
+      # Mount data directory
+      - ./data:/app/data
+      # Persist Jupyter configuration
+      - jupyter_data:/root/.jupyter
+    environment:
+      # Pass through Hugging Face token if set
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HUGGINGFACE_HUB_TOKEN=${HUGGINGFACE_HUB_TOKEN:-}
+    stdin_open: true
+    tty: true
+    command: jupyter notebook --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token= --NotebookApp.password=
+
+volumes:
+  jupyter_data:
