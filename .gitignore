@@ -3,8 +3,8 @@
 .env*
 replace.txt
 
-# ecoVAD assets
-ecoVAD/assets/
+# ecoVAD folder (entire repository)
+ecoVAD/
 
 # Zip files
 *.zip
