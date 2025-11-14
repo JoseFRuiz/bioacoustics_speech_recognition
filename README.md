@@ -79,10 +79,47 @@ docker-compose logs -f
 docker-compose exec bioacoustics bash
 ```
 
-**Rebuild after dependency changes:**
+**Rebuild the Docker image:**
+
+Rebuilding the Docker image is necessary when you:
+- Update `Dockerfile` or `docker-compose.yml`
+- Add or modify system dependencies
+- Change Python version or base image
+- Add new system packages or tools (e.g., Poetry, new build tools)
+- Update `requirements.txt` and want to ensure clean installation
+
+**Using Docker Compose (recommended):**
 ```bash
+# Stop any running containers first
+docker-compose down
+
+# Rebuild and start the container
 docker-compose up --build
+
+# Or rebuild without starting
+docker-compose build
+
+# Or rebuild without cache (slower but ensures clean build)
+docker-compose build --no-cache
 ```
+
+**Using Docker directly:**
+```bash
+# Rebuild the image
+docker build -t bioacoustics-sr .
+
+# Or rebuild without cache
+docker build --no-cache -t bioacoustics-sr .
+
+# Then run the container
+docker run -p 8888:8888 \
+  -v "${PWD}:/app" \
+  -v "${PWD}/data:/app/data" \
+  --env-file .env \
+  bioacoustics-sr
+```
+
+**Note:** After rebuilding, you may need to restart your container if it was already running. Use `docker-compose down` followed by `docker-compose up` to ensure you're using the newly built image.
 
 ### Running Python Scripts
 
@@ -127,6 +164,72 @@ docker run --rm -v "${PWD}:/app" -v "${PWD}/data:/app/data" --env-file .env bioa
 
 **Note:** Make sure your `.env` file contains `HF_TOKEN=your_token_here` and that any required input files (e.g., audio files in the `data/` directory) exist before running scripts.
 
+## Using EcoVAD for Speech Detection
+
+The project includes `EcoVADDetection.py`, a script that applies segmentation using [ecoVAD](https://github.com/NINAnor/ecoVAD), an end-to-end pipeline for training and using VAD models in soundscape analysis.
+
+### Setup EcoVAD for Docker Container
+
+Since the project directory is mounted as a volume in the Docker container, clone ecoVAD inside the project directory:
+
+**1. Clone ecoVAD repository:**
+```bash
+# From the project root directory
+git clone https://github.com/NINAnor/ecoVAD.git
+```
+
+**2. Download model weights:**
+1. Visit [OSF](https://osf.io/f4mt5/) and download `assets.zip`
+2. Extract to `ecoVAD/assets/` directory inside your project
+
+**3. Install ecoVAD dependencies in the container:**
+
+You can either install dependencies inside the running container, or add them to your project's `requirements.txt` if ecoVAD uses standard pip packages.
+
+**Option A: Install in running container**
+```bash
+# Enter the running container
+docker-compose exec bioacoustics bash
+
+# Navigate to ecoVAD directory
+cd /app/ecoVAD
+
+# Install dependencies (if using Poetry - requires poetry to be installed first)
+poetry install --no-root
+
+# Or install via pip (if ecoVAD has requirements.txt)
+pip install -r requirements.txt
+```
+
+**Option B: Rebuild container with ecoVAD dependencies**
+If ecoVAD has a `requirements.txt` or `pyproject.toml`, you may need to install its dependencies by adding them to your project's requirements or rebuilding the container.
+
+### Running EcoVADDetection.py
+
+The script works with the same Docker container as your other scripts. It will:
+- Automatically detect ecoVAD if cloned in the project directory or parent directory
+- Try to use ecoVAD directly if the repository is cloned and model weights are available
+- Look for ecoVAD JSON detection files if you've run ecoVAD's `anonymise_data.py` script
+- Produce the same output format as `TransformerDetection.py`
+
+**Run the script:**
+```bash
+docker-compose exec bioacoustics python EcoVADDetection.py
+```
+
+**Or run as a one-off command:**
+```bash
+docker-compose run --rm bioacoustics python EcoVADDetection.py
+```
+
+**Note:** The script will fail with clear instructions if ecoVAD is not available. Make sure to set up ecoVAD first (see Setup EcoVAD above).
+
+### Output Files
+
+The script generates:
+- `output_with_voice_ecovad.wav` - Audio containing only detected speech segments
+- `output_with_silence_ecovad.wav` - Audio with speech segments removed (silence only)
+
 ## Notes
 
 - All dependencies (including FFmpeg) are automatically installed in the container
@@ -134,3 +237,4 @@ docker run --rm -v "${PWD}:/app" -v "${PWD}/data:/app/data" --env-file .env bioa
 - Output files (`.wav`, etc.) will be saved in your local project directory
 - Make sure to add `.env` to your `.gitignore` file to avoid committing your Hugging Face token
 - The Docker setup uses Python 3.13, which is required for audioop-lts and compatible with all project dependencies
+- EcoVAD is specifically designed for eco-acoustic data and may perform better on natural soundscapes than general-purpose VAD models

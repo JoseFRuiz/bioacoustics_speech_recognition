@@ -2,3 +2,12 @@
 .env
 .env*
 replace.txt
+
+# ecoVAD assets
+ecoVAD/assets/
+
+# Zip files
+*.zip
+
+# Audio output files
+*.wav
