@@ -4,6 +4,7 @@ import contextlib
 import wave
 import os
 import subprocess
+import csv
 from pydub import AudioSegment
 
 # Convert MP3 to WAV
@@ -91,11 +92,17 @@ def save_audio_with_intervals(wav_path, intervals, output_with_voice, output_wit
     audio_with_voice.export(output_with_voice, format="wav")
     audio_with_silence.export(output_with_silence, format="wav")
 
+# Create output directory if it doesn't exist
+output_dir = "output"
+os.makedirs(output_dir, exist_ok=True)
+
 # Paths
-mp3_path = os.path.join("data","XC240120 - Soundscape.mp3")  # Upload your MP3 file to Colab
+audio_code = "XC240120"
+mp3_path = os.path.join("data",f"{audio_code} - Soundscape.mp3")  # Upload your MP3 file to Colab
 wav_path = "temp_audio.wav"
-output_with_voice = "output_with_voice_WebRTC.wav"
-output_with_silence = "output_with_silence_WebRTC.wav"
+output_with_voice = os.path.join(output_dir, f"output_with_voice_WebRTC_{audio_code}.wav")
+output_with_silence = os.path.join(output_dir, f"output_with_silence_WebRTC_{audio_code}.wav")
+csv_output_path = os.path.join(output_dir, f"voice_activity_intervals_{audio_code}.csv")
 
 # Convert MP3 to WAV
 convert_mp3_to_wav(mp3_path, wav_path)
@@ -117,8 +124,19 @@ intervals = vad_collector(sample_rate, 30, 300, vad, frames)
 for start, end in intervals:
     print(f"Start: {start:.2f}s, End: {end:.2f}s")
 
+# Save intervals to CSV file
+with open(csv_output_path, 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['Start Time (s)', 'End Time (s)', 'Duration (s)'])
+    for start, end in intervals:
+        duration = end - start
+        writer.writerow([f'{start:.3f}', f'{end:.3f}', f'{duration:.3f}'])
+
+print(f"\nCSV file saved to: {csv_output_path}")
+
 # Save new audio files with intervals
 save_audio_with_intervals(wav_path, intervals, output_with_voice, output_with_silence)
+print(f"Audio files saved to: {output_dir}")
 
 # Cleanup temporary WAV file
 os.remove(wav_path)

@@ -3,6 +3,7 @@ from pyannote.audio import Pipeline
 from pydub import AudioSegment
 import numpy as np
 import os
+import csv
 from huggingface_hub import login
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -91,17 +92,23 @@ def save_audio_with_intervals(audio, intervals, output_with_voice, output_with_s
     audio_with_voice.export(output_with_voice, format="wav")
     audio_with_silence.export(output_with_silence, format="wav")
 
+# Create output directory if it doesn't exist
+output_dir = "output"
+os.makedirs(output_dir, exist_ok=True)
+
 # Paths
 # Update this to a valid local path on your machine
-mp3_path = os.path.join("data","XC240120 - Soundscape.mp3") 
+audio_code = "XC240120"
+mp3_path = os.path.join("data",f"{audio_code} - Soundscape.mp3") 
 
 # Validate input path early
 if not os.path.isfile(mp3_path):
     raise FileNotFoundError(
         f"Audio file not found: {mp3_path}. Update 'mp3_path' to a valid local file."
     )
-output_with_voice = "output_with_voice_huggingface.wav"
-output_with_silence = "output_with_silence_huggingface.wav"
+output_with_voice = os.path.join(output_dir, f"output_with_voice_huggingface_{audio_code}.wav")
+output_with_silence = os.path.join(output_dir, f"output_with_silence_huggingface_{audio_code}.wav")
+csv_output_path = os.path.join(output_dir, f"voice_activity_intervals_transformer_{audio_code}.csv")
 
 # Load and preprocess audio
 samples, audio_segment, sample_rate = load_and_preprocess_audio(mp3_path)
@@ -112,5 +119,20 @@ duration = len(audio_segment) / 1000.0
 
 print(speech_intervals)
 
+# Print intervals
+for start, end in speech_intervals:
+    print(f"Start: {start:.2f}s, End: {end:.2f}s")
+
+# Save intervals to CSV file
+with open(csv_output_path, 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['Start Time (s)', 'End Time (s)', 'Duration (s)'])
+    for start, end in speech_intervals:
+        duration_interval = end - start
+        writer.writerow([f'{start:.3f}', f'{end:.3f}', f'{duration_interval:.3f}'])
+
+print(f"\nCSV file saved to: {csv_output_path}")
+
 # Save new audio files with intervals
 save_audio_with_intervals(audio_segment, speech_intervals, output_with_voice, output_with_silence, duration)
+print(f"Audio files saved to: {output_dir}")

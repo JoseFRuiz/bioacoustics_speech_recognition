@@ -28,6 +28,7 @@ import numpy as np
 import os
 import sys
 import json
+import csv
 import subprocess
 from pathlib import Path
 import torch
@@ -329,8 +330,13 @@ def save_audio_with_intervals(audio, intervals, output_with_voice, output_with_s
 
 def main():
     """Main function to run ecoVAD detection."""
+    # Create output directory if it doesn't exist
+    output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)
+    
     # Paths
-    mp3_path = os.path.join("data", "XC240120 - Soundscape.mp3")
+    audio_code = "XC240120"
+    mp3_path = os.path.join("data", f"{audio_code} - Soundscape.mp3")
     
     # Validate input path
     if not os.path.isfile(mp3_path):
@@ -338,8 +344,9 @@ def main():
             f"Audio file not found: {mp3_path}. Update 'mp3_path' to a valid local file."
         )
     
-    output_with_voice = "output_with_voice_ecovad.wav"
-    output_with_silence = "output_with_silence_ecovad.wav"
+    output_with_voice = os.path.join(output_dir, f"output_with_voice_ecovad_{audio_code}.wav")
+    output_with_silence = os.path.join(output_dir, f"output_with_silence_ecovad_{audio_code}.wav")
+    csv_output_path = os.path.join(output_dir, f"voice_activity_intervals_ecovad_{audio_code}.csv")
     
     print("=" * 60)
     print("EcoVAD Voice Activity Detection")
@@ -363,9 +370,20 @@ def main():
             for i, (start, end) in enumerate(speech_intervals, 1):
                 print(f"  Segment {i}: {start:.2f}s - {end:.2f}s (duration: {end-start:.2f}s)")
             
+            # Save intervals to CSV file
+            with open(csv_output_path, 'w', newline='') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(['Start Time (s)', 'End Time (s)', 'Duration (s)'])
+                for start, end in speech_intervals:
+                    duration_interval = end - start
+                    writer.writerow([f'{start:.3f}', f'{end:.3f}', f'{duration_interval:.3f}'])
+            
+            print(f"\nCSV file saved to: {csv_output_path}")
+            
             # Save new audio files with intervals
             save_audio_with_intervals(audio_segment, speech_intervals, output_with_voice, output_with_silence)
             
+            print(f"Audio files saved to: {output_dir}")
             print("\n" + "=" * 60)
             print("Detection completed successfully!")
             print("=" * 60)
