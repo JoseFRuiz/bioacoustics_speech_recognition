@@ -334,62 +334,64 @@ def main():
     output_dir = "output"
     os.makedirs(output_dir, exist_ok=True)
     
-    # Paths
-    audio_code = "XC240120"
-    mp3_path = os.path.join("data", f"{audio_code} - Soundscape.mp3")
-    
-    # Validate input path
-    if not os.path.isfile(mp3_path):
-        raise FileNotFoundError(
-            f"Audio file not found: {mp3_path}. Update 'mp3_path' to a valid local file."
-        )
-    
-    output_with_voice = os.path.join(output_dir, f"output_with_voice_ecovad_{audio_code}.wav")
-    output_with_silence = os.path.join(output_dir, f"output_with_silence_ecovad_{audio_code}.wav")
-    csv_output_path = os.path.join(output_dir, f"voice_activity_intervals_ecovad_{audio_code}.csv")
-    
-    print("=" * 60)
-    print("EcoVAD Voice Activity Detection")
-    print("=" * 60)
-    print(f"Input audio: {mp3_path}")
-    print()
-    
-    # Detect speech intervals using ecoVAD
-    try:
-        speech_intervals, audio_segment = detect_speech_intervals_from_file(mp3_path)
-        print("Using ecoVAD for detection")
+    # List of audio codes to process
+    audio_code_list = ["XC237810", "XC237812", "XC237813", "XC237887", "XC237889", "XC237890", "XC240119", "XC240120"]
+    for audio_code in audio_code_list:
+        # Paths
+        mp3_path = os.path.join("data", f"{audio_code} - Soundscape.mp3")
         
-        if speech_intervals is None or len(speech_intervals) == 0:
-            print("Warning: No speech intervals detected.")
-            print("This could mean:")
-            print("  - No speech was found in the audio")
-            print("  - The detection model needs adjustment")
-            print("  - There was an error in detection")
-        else:
-            print(f"\nDetected {len(speech_intervals)} speech segments:")
-            for i, (start, end) in enumerate(speech_intervals, 1):
-                print(f"  Segment {i}: {start:.2f}s - {end:.2f}s (duration: {end-start:.2f}s)")
+        # Validate input path
+        if not os.path.isfile(mp3_path):
+            raise FileNotFoundError(
+                f"Audio file not found: {mp3_path}. Update 'mp3_path' to a valid local file."
+            )
+        
+        output_with_voice = os.path.join(output_dir, f"output_with_voice_ecovad_{audio_code}.wav")
+        output_with_silence = os.path.join(output_dir, f"output_with_silence_ecovad_{audio_code}.wav")
+        csv_output_path = os.path.join(output_dir, f"voice_activity_intervals_ecovad_{audio_code}.csv")
+        
+        print("=" * 60)
+        print("EcoVAD Voice Activity Detection")
+        print("=" * 60)
+        print(f"Input audio: {mp3_path}")
+        print()
+        
+        # Detect speech intervals using ecoVAD
+        try:
+            speech_intervals, audio_segment = detect_speech_intervals_from_file(mp3_path)
+            print("Using ecoVAD for detection")
             
-            # Save intervals to CSV file
-            with open(csv_output_path, 'w', newline='') as csvfile:
-                writer = csv.writer(csvfile)
-                writer.writerow(['Start Time (s)', 'End Time (s)', 'Duration (s)'])
-                for start, end in speech_intervals:
-                    duration_interval = end - start
-                    writer.writerow([f'{start:.3f}', f'{end:.3f}', f'{duration_interval:.3f}'])
-            
-            print(f"\nCSV file saved to: {csv_output_path}")
-            
-            # Save new audio files with intervals
-            save_audio_with_intervals(audio_segment, speech_intervals, output_with_voice, output_with_silence)
-            
-            print(f"Audio files saved to: {output_dir}")
-            print("\n" + "=" * 60)
-            print("Detection completed successfully!")
-            print("=" * 60)
-    except Exception as e:
-        print(f"\nEcoVAD detection failed: {e}")
-        raise
+            if speech_intervals is None or len(speech_intervals) == 0:
+                print("Warning: No speech intervals detected.")
+                print("This could mean:")
+                print("  - No speech was found in the audio")
+                print("  - The detection model needs adjustment")
+                print("  - There was an error in detection")
+            else:
+                print(f"\nDetected {len(speech_intervals)} speech segments:")
+                for i, (start, end) in enumerate(speech_intervals, 1):
+                    print(f"  Segment {i}: {start:.2f}s - {end:.2f}s (duration: {end-start:.2f}s)")
+                
+                # Save intervals to CSV file
+                with open(csv_output_path, 'w', newline='') as csvfile:
+                    writer = csv.writer(csvfile)
+                    writer.writerow(['Start Time (s)', 'End Time (s)', 'Duration (s)'])
+                    for start, end in speech_intervals:
+                        duration_interval = end - start
+                        writer.writerow([f'{start:.3f}', f'{end:.3f}', f'{duration_interval:.3f}'])
+                
+                print(f"\nCSV file saved to: {csv_output_path}")
+                
+                # Save new audio files with intervals
+                save_audio_with_intervals(audio_segment, speech_intervals, output_with_voice, output_with_silence)
+                
+                print(f"Audio files saved to: {output_dir}")
+                print("\n" + "=" * 60)
+                print("Detection completed successfully!")
+                print("=" * 60)
+        except Exception as e:
+            print(f"\nEcoVAD detection failed: {e}")
+            raise
 
 
 if __name__ == "__main__":

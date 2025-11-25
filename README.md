@@ -41,27 +41,6 @@ docker-compose up --build
 docker-compose up -d --build
 ```
 
-Using Docker directly:
-
-```bash
-# Build the Docker image
-docker build -t bioacoustics-sr .
-
-# Run the container
-docker run -p 8888:8888 \
-  -v "${PWD}:/app" \
-  -v "${PWD}/data:/app/data" \
-  --env-file .env \
-  bioacoustics-sr
-```
-
-**3) Access Jupyter Notebook**
-
-Once the container is running, open your browser and navigate to:
-- `http://localhost:8888`
-
-The Jupyter notebook interface will be available. Open `bioacoustics_speech_recognition.ipynb` to start working.
-
 ### Managing the Container
 
 **Stop the container:**
@@ -101,22 +80,6 @@ docker-compose build
 
 # Or rebuild without cache (slower but ensures clean build)
 docker-compose build --no-cache
-```
-
-**Using Docker directly:**
-```bash
-# Rebuild the image
-docker build -t bioacoustics-sr .
-
-# Or rebuild without cache
-docker build --no-cache -t bioacoustics-sr .
-
-# Then run the container
-docker run -p 8888:8888 \
-  -v "${PWD}:/app" \
-  -v "${PWD}/data:/app/data" \
-  --env-file .env \
-  bioacoustics-sr
 ```
 
 **Note:** After rebuilding, you may need to restart your container if it was already running. Use `docker-compose down` followed by `docker-compose up` to ensure you're using the newly built image.

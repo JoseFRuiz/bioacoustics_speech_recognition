@@ -96,47 +96,50 @@ def save_audio_with_intervals(wav_path, intervals, output_with_voice, output_wit
 output_dir = "output"
 os.makedirs(output_dir, exist_ok=True)
 
-# Paths
-audio_code = "XC240120"
-mp3_path = os.path.join("data",f"{audio_code} - Soundscape.mp3")  # Upload your MP3 file to Colab
-wav_path = "temp_audio.wav"
-output_with_voice = os.path.join(output_dir, f"output_with_voice_WebRTC_{audio_code}.wav")
-output_with_silence = os.path.join(output_dir, f"output_with_silence_WebRTC_{audio_code}.wav")
-csv_output_path = os.path.join(output_dir, f"voice_activity_intervals_{audio_code}.csv")
+# List of audio codes to process
+audio_code_list = ["XC237810", "XC237812", "XC237813", "XC237887", "XC237889", "XC237890", "XC240119", "XC240120"]
 
-# Convert MP3 to WAV
-convert_mp3_to_wav(mp3_path, wav_path)
+for audio_code in audio_code_list:
+    # Paths
+    mp3_path = os.path.join("data",f"{audio_code} - Soundscape.mp3")  # Upload your MP3 file to Colab
+    wav_path = "temp_audio.wav"
+    output_with_voice = os.path.join(output_dir, f"output_with_voice_WebRTC_{audio_code}.wav")
+    output_with_silence = os.path.join(output_dir, f"output_with_silence_WebRTC_{audio_code}.wav")
+    csv_output_path = os.path.join(output_dir, f"voice_activity_intervals_{audio_code}.csv")
 
-# Read WAV file
-audio, sample_rate = read_wave(wav_path)
+    # Convert MP3 to WAV
+    convert_mp3_to_wav(mp3_path, wav_path)
 
-# Initialize VAD
-vad = webrtcvad.Vad(3)
+    # Read WAV file
+    audio, sample_rate = read_wave(wav_path)
 
-# Generate frames
-frames = frame_generator(30, audio, sample_rate)
-frames = list(frames)
+    # Initialize VAD
+    vad = webrtcvad.Vad(3)
 
-# Collect voiced segments
-intervals = vad_collector(sample_rate, 30, 300, vad, frames)
+    # Generate frames
+    frames = frame_generator(30, audio, sample_rate)
+    frames = list(frames)
 
-# Print intervals
-for start, end in intervals:
-    print(f"Start: {start:.2f}s, End: {end:.2f}s")
+    # Collect voiced segments
+    intervals = vad_collector(sample_rate, 30, 300, vad, frames)
 
-# Save intervals to CSV file
-with open(csv_output_path, 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(['Start Time (s)', 'End Time (s)', 'Duration (s)'])
+    # Print intervals
     for start, end in intervals:
-        duration = end - start
-        writer.writerow([f'{start:.3f}', f'{end:.3f}', f'{duration:.3f}'])
+        print(f"Start: {start:.2f}s, End: {end:.2f}s")
 
-print(f"\nCSV file saved to: {csv_output_path}")
+    # Save intervals to CSV file
+    with open(csv_output_path, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Start Time (s)', 'End Time (s)', 'Duration (s)'])
+        for start, end in intervals:
+            duration = end - start
+            writer.writerow([f'{start:.3f}', f'{end:.3f}', f'{duration:.3f}'])
 
-# Save new audio files with intervals
-save_audio_with_intervals(wav_path, intervals, output_with_voice, output_with_silence)
-print(f"Audio files saved to: {output_dir}")
+    print(f"\nCSV file saved to: {csv_output_path}")
 
-# Cleanup temporary WAV file
-os.remove(wav_path)
+    # Save new audio files with intervals
+    save_audio_with_intervals(wav_path, intervals, output_with_voice, output_with_silence)
+    print(f"Audio files saved to: {output_dir}")
+
+    # Cleanup temporary WAV file
+    os.remove(wav_path)
