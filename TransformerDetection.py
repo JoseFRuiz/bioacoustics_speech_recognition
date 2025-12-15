@@ -83,11 +83,33 @@ def save_audio_with_intervals(audio, intervals, output_with_voice, output_with_s
     audio_with_voice = silent_audio
     audio_with_silence = audio
 
+    audio_duration_ms = len(audio)
+    audio_duration_s = audio_duration_ms / 1000.0
+
     for start, end in intervals:
-        start_ms = int(start * 1000)
-        end_ms = int(end * 1000)
-        audio_with_voice = audio_with_voice.overlay(audio[start_ms:end_ms], position=start_ms)
-        audio_with_silence = audio_with_silence.overlay(silent_audio[start_ms:end_ms], position=start_ms)
+        # Clamp intervals to audio bounds to prevent index out of range errors
+        start_clamped = max(0.0, min(start, audio_duration_s))
+        end_clamped = max(0.0, min(end, audio_duration_s))
+        
+        # Warn if interval was clamped
+        if start != start_clamped or end != end_clamped:
+            print(f"Warning: Interval [{start:.3f}s, {end:.3f}s] clamped to [{start_clamped:.3f}s, {end_clamped:.3f}s] "
+                  f"(audio duration: {audio_duration_s:.3f}s)")
+        
+        # Skip invalid intervals
+        if end_clamped <= start_clamped:
+            continue
+            
+        start_ms = int(start_clamped * 1000)
+        end_ms = int(end_clamped * 1000)
+        
+        # Ensure we don't exceed audio bounds (double-check in milliseconds)
+        start_ms = max(0, min(start_ms, audio_duration_ms))
+        end_ms = max(0, min(end_ms, audio_duration_ms))
+        
+        if end_ms > start_ms:
+            audio_with_voice = audio_with_voice.overlay(audio[start_ms:end_ms], position=start_ms)
+            audio_with_silence = audio_with_silence.overlay(silent_audio[start_ms:end_ms], position=start_ms)
 
     audio_with_voice.export(output_with_voice, format="wav")
     audio_with_silence.export(output_with_silence, format="wav")
@@ -119,9 +141,24 @@ for audio_code in audio_code_list:
     speech_intervals, duration = detect_speech_intervals(samples, sample_rate, pipeline)
     duration = len(audio_segment) / 1000.0
 
-    print(speech_intervals)
+    # Clamp intervals to audio duration to prevent out-of-bounds errors
+    clamped_intervals = []
+    for start, end in speech_intervals:
+        start_clamped = max(0.0, min(start, duration))
+        end_clamped = max(0.0, min(end, duration))
+        
+        # Warn if interval was clamped
+        if start != start_clamped or end != end_clamped:
+            print(f"Warning: Interval [{start:.3f}s, {end:.3f}s] clamped to [{start_clamped:.3f}s, {end_clamped:.3f}s] "
+                  f"(audio duration: {duration:.3f}s)")
+        
+        # Only add valid intervals
+        if end_clamped > start_clamped:
+            clamped_intervals.append((start_clamped, end_clamped))
+    
+    speech_intervals = clamped_intervals
 
-    # Print intervals
+    print(f"Detected {len(speech_intervals)} speech intervals:")
     for start, end in speech_intervals:
         print(f"Start: {start:.2f}s, End: {end:.2f}s")
 

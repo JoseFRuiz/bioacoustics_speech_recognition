@@ -4,25 +4,28 @@ FROM python:3.13-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies in a single layer
 # FFmpeg is required for audio processing (pydub)
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file first for better Docker layer caching
-COPY requirements.txt .
+# Copy requirements files first for better Docker layer caching
+COPY requirements.txt requirements-base.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
-
-# Install Jupyter for notebook support
-RUN pip install --no-cache-dir jupyter notebook
-
-# Copy project files
-COPY . .
+# Install all Python dependencies in a single layer (faster rebuilds)
+# Using pip cache mount for faster subsequent builds
+# Note: Installation is split: base requirements first, then pyannote.audio separately
+# torchaudio is installed with --no-deps to avoid version conflict with torch<2.6.0
+# torchaudio 2.6.0+ works with torch 2.5.x for basic operations needed by pyannote.audio
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --upgrade pip && \
+    pip install "torch<2.6.0" && \
+    pip install --no-deps torchaudio && \
+    pip install -r requirements-base.txt && \
+    pip install "pyannote.audio==4.0.3" && \
+    pip install jupyter notebook
 
 # Expose Jupyter notebook port
 EXPOSE 8888

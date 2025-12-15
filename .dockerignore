@@ -20,7 +20,10 @@ ENV/
 # Output files
 *.wav
 *.mp3
+output/
 output_*
+data/
+*.csv
 
 # Git
 .git/

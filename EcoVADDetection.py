@@ -51,7 +51,7 @@ try:
         # Try to import ecoVAD modules
         try:
             # Import based on ecoVAD's actual structure
-            from VAD_algorithms.ecovad import ecoVADpredict
+            from VAD_algorithms.ecovad.ecoVAD_predict import ecoVADpredict
             ECOVAD_AVAILABLE = True
             print("Successfully imported ecoVAD modules")
         except ImportError as e:
@@ -132,7 +132,7 @@ def detect_speech_intervals_ecovad(samples, sample_rate, audio_path, model_path=
                 output_json_path = os.path.join(temp_dir, "ecovad_detections")
                 
                 # Initialize ecoVADpredict and run detection
-                from VAD_algorithms.ecovad import ecoVADpredict
+                from VAD_algorithms.ecovad.ecoVAD_predict import ecoVADpredict
                 predictor = ecoVADpredict(
                     input=str(audio_path),
                     output=output_json_path,

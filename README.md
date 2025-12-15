@@ -84,6 +84,42 @@ docker-compose build --no-cache
 
 **Note:** After rebuilding, you may need to restart your container if it was already running. Use `docker-compose down` followed by `docker-compose up` to ensure you're using the newly built image.
 
+### Faster Build Tips
+
+To speed up Docker container builds:
+
+**1. Use BuildKit (enabled by default in Docker Desktop):**
+```bash
+# Build with BuildKit for cache mounts and parallel builds
+DOCKER_BUILDKIT=1 docker-compose build
+```
+
+**2. Leverage layer caching:**
+- The Dockerfile is optimized to install dependencies before copying code
+- Only rebuilds dependencies when `requirements.txt` changes
+- Code changes don't trigger dependency reinstallation
+
+**3. Use build cache:**
+```bash
+# Build using cache (default behavior)
+docker-compose build
+
+# Skip cache only when needed (much slower)
+docker-compose build --no-cache
+```
+
+**4. Build specific services:**
+```bash
+# Only build the bioacoustics service
+docker-compose build bioacoustics
+```
+
+**5. Parallel dependency installation:**
+The Dockerfile uses pip cache mounts to speed up subsequent builds. The first build downloads packages, but subsequent builds reuse cached packages.
+
+**6. Exclude unnecessary files:**
+The `.dockerignore` file excludes output files, data, and other files that don't need to be in the image, reducing build context size.
+
 ### Running Python Scripts
 
 You can run Python scripts (like `TransformerDetection.py`) in the container using several methods:
@@ -192,6 +228,55 @@ docker-compose run --rm bioacoustics python EcoVADDetection.py
 The script generates:
 - `output_with_voice_ecovad.wav` - Audio containing only detected speech segments
 - `output_with_silence_ecovad.wav` - Audio with speech segments removed (silence only)
+
+## Known Issues and Solutions
+
+### Interval Detection Beyond Audio Duration
+
+**Issue:** The pyannote.audio segmentation model (`pyannote/segmentation-3.0`) processes audio in fixed 10-second chunks. When processing the final chunk of an audio file, the model may generate detection intervals that extend slightly beyond the actual audio file duration. This occurs because:
+
+1. The model processes chunks of fixed size (10 seconds) and calculates timestamps relative to chunk boundaries
+2. The last chunk may be shorter than 10 seconds, but the model treats it as a full chunk
+3. Timestamps are calculated from frame positions within chunks, not from the exact audio file duration
+4. Small discrepancies can arise from rounding during resampling and format conversion
+
+**Example:** For an audio file with duration 605.863 seconds, the model might detect an interval ending at 605.894 seconds, causing an index out of bounds error when trying to access audio samples beyond the file's actual length.
+
+**Solution:** The detection scripts (`TransformerDetection.py` and `WebRTCVADDetection.py`) now include automatic bounds checking that:
+
+- Clamps all detected intervals to the actual audio file duration before processing
+- Validates intervals in both seconds and milliseconds to prevent index errors
+- Displays warning messages when intervals are adjusted
+- Filters out invalid intervals (where end ≤ start) after clamping
+
+This ensures robust processing even when the VAD model generates timestamps that slightly exceed the audio file boundaries.
+
+### PyTorch 2.6 Compatibility Issue
+
+**Issue:** PyTorch 2.6 changed the default behavior of `torch.load()` to use `weights_only=True` for security. This causes an error when loading pyannote.audio models because the model checkpoints contain `torch.torch_version.TorchVersion` which is not in the default allowlist.
+
+**Error Message:** `_pickle.UnpicklingError: Weights only load failed... Unsupported global: GLOBAL torch.torch_version.TorchVersion`
+
+**Solution:** PyTorch is pinned to version `<2.6.0` in `requirements.txt` to maintain compatibility with pyannote.audio. 
+
+**Note:** `torchaudio` and `pyannote.audio` installation workaround for Python 3.13:
+- `torchaudio` requires an exact version match with `torch` (e.g., `torchaudio 2.6.0` requires `torch==2.6.0`)
+- `torchaudio 2.5.x` doesn't have Python 3.13 builds
+- `torchaudio 2.6.0+` requires `torch 2.6.0+`, which conflicts with our `torch<2.6.0` constraint
+- However, `pyannote.audio>=2.1` requires `torchaudio>=2.2.0`
+- **Solution:** 
+  - `torchaudio` is installed in the Dockerfile with `--no-deps` flag to bypass version checking
+  - `torchaudio 2.6.0+` is mostly compatible with `torch 2.5.x` for the operations needed by pyannote.audio
+  - Base dependencies are installed first from `requirements-base.txt`, then `pyannote.audio==4.0.3` is installed separately to avoid dependency resolution conflicts
+
+If you encounter this error:
+
+1. Ensure your `requirements.txt` has `torch<2.6.0`
+2. The Dockerfile automatically installs `torchaudio` with `--no-deps` to work around the version conflict
+3. Rebuild your Docker container: `docker-compose down && docker-compose up --build`
+4. If using a local environment, install manually: `pip install --no-deps torchaudio` after installing torch
+
+This issue will be resolved once pyannote.audio updates to support PyTorch 2.6+.
 
 ## Notes
 
