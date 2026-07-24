@@ -6,13 +6,19 @@ WORKDIR /app
 
 # Install system dependencies in a single layer
 # FFmpeg is required for audio processing (pydub)
-RUN apt-get update && apt-get install -y \
+# --no-install-recommends avoids pulling unneeded GUI/X11/VA-API packages
+# deb.debian.org's plain-HTTP endpoint has been returning 403 from its Fastly
+# CDN; switching sources to HTTPS avoids it. Retries guard against remaining flakiness.
+RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null; \
+    echo 'Acquire::Retries "5";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "30";' >> /etc/apt/apt.conf.d/80-retries && \
+    apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements files first for better Docker layer caching
-COPY requirements.txt requirements-base.txt .
+COPY requirements.txt requirements-base.txt ./
 
 # Install all Python dependencies in a single layer (faster rebuilds)
 # Using pip cache mount for faster subsequent builds

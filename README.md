@@ -58,6 +58,16 @@ docker-compose logs -f
 docker-compose exec bioacoustics bash
 ```
 
+**Apply changes to `.env` or `docker-compose.yml` (recreate without rebuilding):**
+
+`docker-compose exec` runs commands inside the *existing* container, using whatever environment variables were set when that container was created. If you add or change values in `.env` (e.g. `HF_TOKEN`) or edit the `environment:` section of `docker-compose.yml` after the container is already running, those changes won't be visible via `exec` until the container is recreated. You don't need a full image rebuild for this — just recreate the container from the existing image:
+
+```bash
+docker-compose up -d --force-recreate
+```
+
+This stops and recreates the container (picking up the current `.env`/`docker-compose.yml` values) without re-running the Docker build, so it takes seconds rather than the minutes a rebuild would take. Use a full rebuild (`docker-compose up --build`) instead when you've changed the `Dockerfile` itself or dependencies (see below).
+
 **Rebuild the Docker image:**
 
 Rebuilding the Docker image is necessary when you:
